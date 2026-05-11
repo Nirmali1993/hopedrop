@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "672520110700",
+    "project_id": "hopedrop-e673b",
+    "storage_bucket": "hopedrop-e673b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:672520110700:android:2723865d6f1ff2163b8e49",
+        "android_client_info": {
+          "package_name": "com.example.hopedrop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "672520110700-3uorc5juvgo1pgu8f344p8mtig2b005o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hopedrop",
+            "certificate_hash": "b69db94032a06dd00baebef59341357fefc55802"
+          }
+        },
+        {
+          "client_id": "672520110700-3fotom4qo9iojgg3bbple9cn8jpe3rcb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwOZlqy-EeayUXc1u1_Ji1-Ts3iVczTLY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "672520110700-3fotom4qo9iojgg3bbple9cn8jpe3rcb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
