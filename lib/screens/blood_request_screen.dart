@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart'; // ✅ NEW
 
 class BloodRequestScreen extends StatefulWidget {
   const BloodRequestScreen({super.key});
@@ -99,6 +100,39 @@ class _PostRequestTabState extends State<_PostRequestTab> {
     super.dispose();
   }
 
+  // ✅ NEW — Send notifications to matching donors
+  Future<void> _notifyMatchingDonors(
+      String bloodType, String hospital, String location) async {
+    try {
+      // Get all available donors with matching blood type
+      final QuerySnapshot donors = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'donor')
+          .where('bloodType', isEqualTo: bloodType)
+          .where('isAvailable', isEqualTo: true)
+          .get();
+
+      print('📢 Found ${donors.docs.length} matching donors to notify');
+
+      // Send notification to each donor
+      for (final doc in donors.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final token = data['fcmToken'] as String?;
+
+        if (token != null && token.isNotEmpty) {
+          await NotificationService.sendNotificationToToken(
+            token: token,
+            title: '🩸 Urgent Blood Needed! ($bloodType)',
+            body: '$hospital · $location needs $bloodType blood donors',
+          );
+          print('✅ Notified donor: ${data['name']}');
+        }
+      }
+    } catch (e) {
+      print('❌ Notification error: $e');
+    }
+  }
+
   void _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -112,6 +146,13 @@ class _PostRequestTabState extends State<_PostRequestTab> {
         units: int.parse(_unitsController.text.trim()),
         urgency: _urgency,
         notes: _notesController.text.trim(),
+      );
+
+      // ✅ NEW — Automatically notify matching donors
+      await _notifyMatchingDonors(
+        _selectedBloodType!,
+        _hospitalController.text.trim(),
+        _locationController.text.trim(),
       );
 
       if (mounted) {
@@ -136,6 +177,7 @@ class _PostRequestTabState extends State<_PostRequestTab> {
             ),
             content: const Text(
               'Your blood request has been posted. '
+              'Nearby donors have been notified! '
               'Check "My Requests" tab to see who responds!',
             ),
             actions: [
@@ -172,7 +214,6 @@ class _PostRequestTabState extends State<_PostRequestTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Urgency
             const Text('Urgency Level',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
@@ -216,15 +257,13 @@ class _PostRequestTabState extends State<_PostRequestTab> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-
             _buildField(
                 controller: _patientNameController,
                 hint: 'Patient Name',
                 icon: Icons.person_outline),
             const SizedBox(height: 14),
-
             DropdownButtonFormField<String>(
-              value: _selectedBloodType,
+              initialValue: _selectedBloodType,
               decoration: _inputDecoration(
                   hint: 'Blood Type Needed', icon: Icons.water_drop_outlined),
               items: _bloodTypes
@@ -234,26 +273,22 @@ class _PostRequestTabState extends State<_PostRequestTab> {
               validator: (v) => v == null ? 'Please select blood type' : null,
             ),
             const SizedBox(height: 14),
-
             _buildField(
                 controller: _hospitalController,
                 hint: 'Hospital Name',
                 icon: Icons.local_hospital_outlined),
             const SizedBox(height: 14),
-
             _buildField(
                 controller: _locationController,
                 hint: 'Location (City)',
                 icon: Icons.location_on_outlined),
             const SizedBox(height: 14),
-
             _buildField(
                 controller: _unitsController,
                 hint: 'Units Required',
                 icon: Icons.science_outlined,
                 keyboardType: TextInputType.number),
             const SizedBox(height: 14),
-
             TextFormField(
               controller: _notesController,
               maxLines: 3,
@@ -263,7 +298,6 @@ class _PostRequestTabState extends State<_PostRequestTab> {
               ).copyWith(alignLabelWithHint: true),
             ),
             const SizedBox(height: 28),
-
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -433,7 +467,6 @@ class _MyRequestCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Request header
           Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -476,7 +509,6 @@ class _MyRequestCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Status badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -498,11 +530,7 @@ class _MyRequestCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Divider
           const Divider(height: 1, color: Color(0xFFF5F5F5)),
-
-          // Responses section
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -523,7 +551,6 @@ class _MyRequestCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 if (respondedBy.isEmpty)
                   const Padding(
                     padding: EdgeInsets.only(top: 8),
@@ -538,8 +565,6 @@ class _MyRequestCard extends StatelessWidget {
                         .map((uid) => _DonorResponseItem(uid: uid))
                         .toList(),
                   ),
-
-                // Mark as fulfilled
                 if (status == 'active' && respondedBy.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
@@ -610,7 +635,6 @@ class _DonorResponseItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: 22,
                 backgroundColor: const Color(0xFFFFEBEE),
@@ -623,8 +647,6 @@ class _DonorResponseItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,8 +667,6 @@ class _DonorResponseItem extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Call button
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -8,7 +8,6 @@ class DatabaseService {
   // BLOOD REQUESTS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Post a new blood request
   static Future<void> createBloodRequest({
     required String patientName,
     required String bloodType,
@@ -30,13 +29,12 @@ class DatabaseService {
       'urgency': urgency,
       'notes': notes,
       'requestedBy': user.uid,
-      'status': 'active', // active | fulfilled | cancelled
+      'status': 'active',
       'respondedBy': [],
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  /// Get all active blood requests (real-time)
   static Stream<QuerySnapshot> getActiveBloodRequests() {
     return _db
         .collection('blood_requests')
@@ -44,17 +42,6 @@ class DatabaseService {
         .snapshots();
   }
 
-  /// Get blood requests by blood type
-  static Stream<QuerySnapshot> getBloodRequestsByType(String bloodType) {
-    return _db
-        .collection('blood_requests')
-        .where('status', isEqualTo: 'active')
-        .where('bloodType', isEqualTo: bloodType)
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-  }
-
-  /// Respond to a blood request
   static Future<void> respondToRequest(String requestId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw 'Not logged in';
@@ -64,7 +51,6 @@ class DatabaseService {
     });
   }
 
-  /// Mark request as fulfilled
   static Future<void> fulfillRequest(String requestId) async {
     await _db.collection('blood_requests').doc(requestId).update({
       'status': 'fulfilled',
@@ -75,7 +61,6 @@ class DatabaseService {
   // DONORS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Get all available donors
   static Stream<QuerySnapshot> getAvailableDonors({String? bloodType}) {
     Query query = _db
         .collection('users')
@@ -89,82 +74,106 @@ class DatabaseService {
     return query.snapshots();
   }
 
-  /// Search donors by name
-  static Future<QuerySnapshot> searchDonors(String query) async {
-    return await _db
-        .collection('users')
-        .where('role', isEqualTo: 'donor')
-        .where('name', isGreaterThanOrEqualTo: query)
-        .where('name', isLessThanOrEqualTo: '$query\uf8ff')
-        .get();
-  }
+  static Stream<QuerySnapshot> getAllDonors({String? bloodType}) {
+    Query query = _db.collection('users').where('role', isEqualTo: 'donor');
 
-  /// Toggle donor availability
-  static Future<void> toggleAvailability(bool isAvailable) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (bloodType != null && bloodType != 'Any') {
+      query = query.where('bloodType', isEqualTo: bloodType);
+    }
 
-    await _db.collection('users').doc(user.uid).update({
-      'isAvailable': isAvailable,
-    });
+    return query.snapshots();
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // DONATIONS HISTORY
+  // DONOR ELIGIBILITY — 3 month rule
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Record a completed donation
+  /// Record a donation — donor becomes unavailable for 90 days
   static Future<void> recordDonation({
-    required String donorId,
-    required String recipientId,
-    required String bloodType,
     required String hospital,
+    required String bloodType,
   }) async {
-    // Add to donations collection
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw 'Not logged in';
+
+    final now = DateTime.now();
+    final nextEligibleDate = now.add(const Duration(days: 90));
+
+    // Save donation record
     await _db.collection('donations').add({
-      'donorId': donorId,
-      'recipientId': recipientId,
+      'donorId': user.uid,
       'bloodType': bloodType,
       'hospital': hospital,
       'donatedAt': FieldValue.serverTimestamp(),
+      'nextEligibleDate': Timestamp.fromDate(nextEligibleDate),
     });
 
-    // Increment donor's total donations
-    await _db.collection('users').doc(donorId).update({
+    // Update donor profile
+    await _db.collection('users').doc(user.uid).update({
+      'isAvailable': false,
+      'lastDonationDate': FieldValue.serverTimestamp(),
+      'nextEligibleDate': Timestamp.fromDate(nextEligibleDate),
       'totalDonations': FieldValue.increment(1),
     });
   }
 
-  /// Get donation history for current user
-  static Stream<QuerySnapshot> getDonationHistory() {
+  /// Check if 3 months passed → make donor available again
+  static Future<void> checkAndUpdateEligibility() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const Stream.empty();
+    if (user == null) return;
 
-    return _db
-        .collection('donations')
-        .where('donorId', isEqualTo: user.uid)
-        .orderBy('donatedAt', descending: true)
-        .snapshots();
+    try {
+      final doc = await _db.collection('users').doc(user.uid).get();
+      final data = doc.data();
+
+      if (data == null || data['role'] != 'donor') return;
+
+      final nextEligibleTimestamp = data['nextEligibleDate'];
+      if (nextEligibleTimestamp == null) return;
+
+      final nextEligibleDate = (nextEligibleTimestamp as Timestamp).toDate();
+
+      if (DateTime.now().isAfter(nextEligibleDate) &&
+          data['isAvailable'] == false) {
+        await _db.collection('users').doc(user.uid).update({
+          'isAvailable': true,
+          'nextEligibleDate': null,
+        });
+      }
+    } catch (_) {}
+  }
+
+  /// Returns days remaining until eligible to donate again
+  static int getDaysUntilEligible(dynamic nextEligibleDate) {
+    if (nextEligibleDate == null) return 0;
+    try {
+      final date = (nextEligibleDate as Timestamp).toDate();
+      final diff = date.difference(DateTime.now()).inDays;
+      return diff > 0 ? diff : 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   // ════════════════════════════════════════════════════════════════════════════
   // STATS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Get app stats (donors count, donations count)
   static Future<Map<String, int>> getAppStats() async {
-    final donors = await _db
-        .collection('users')
-        .where('role', isEqualTo: 'donor')
-        .count()
-        .get();
-
-    final donations = await _db.collection('donations').count().get();
-
-    return {
-      'donors': donors.count ?? 0,
-      'donations': donations.count ?? 0,
-      'livesSaved': ((donations.count ?? 0) * 3), // 1 donation = 3 lives
-    };
+    try {
+      final donors = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'donor')
+          .count()
+          .get();
+      final donations = await _db.collection('donations').count().get();
+      return {
+        'donors': donors.count ?? 0,
+        'donations': donations.count ?? 0,
+        'livesSaved': (donations.count ?? 0) * 3,
+      };
+    } catch (_) {
+      return {'donors': 0, 'donations': 0, 'livesSaved': 0};
+    }
   }
 }

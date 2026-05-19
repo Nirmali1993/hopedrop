@@ -13,20 +13,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   final List<_OnboardData> _pages = [
-    _OnboardData(
+    const _OnboardData(
       imagePath: 'assets/images/img_woman_donate_bl.png',
       fallbackIcon: Icons.local_hospital_outlined,
       title: 'Secure blood for\nSurgeries & Emergencies',
       subtitle: 'Book Blood from trusted banks to avoid\nlast-minute stress',
     ),
-    _OnboardData(
-      imagePath: 'assets/images/img_woman_donate_bl.png',
+    const _OnboardData(
+      imagePath: 'assets/images/needblood2.jpg',
       fallbackIcon: Icons.water_drop_outlined,
       title: 'Need Blood?\nJust a Tap away!',
       subtitle: 'Find donors or blood bank instantly\nwith just a few taps',
     ),
-    _OnboardData(
-      imagePath: 'assets/images/img_woman_donate_bl.png',
+    const _OnboardData(
+      imagePath: 'assets/images/findblood3.jpg',
       fallbackIcon: Icons.favorite_outline,
       title: 'Find Blood,\nSave Life',
       subtitle:

@@ -13,6 +13,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -36,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -51,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await AuthService.registerWithPhone(
+        email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text.trim(),
         name: _nameController.text.trim(),
@@ -176,6 +179,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 14),
 
+                // Email
+                _buildField(
+                  controller: _emailController,
+                  hint: 'Email Address',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Please enter your email';
+                    if (!v.contains('@') || !v.contains('.')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
                 // Phone
                 _buildField(
                   controller: _phoneController,
@@ -190,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 // Blood type dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedBloodType,
+                  initialValue: _selectedBloodType,
                   decoration: _inputDecoration(
                       hint: 'Blood Type', icon: Icons.water_drop_outlined),
                   items: _bloodTypes

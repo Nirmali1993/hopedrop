@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'role_select_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +43,25 @@ class _LoginScreenState extends State<LoginScreen> {
         phone: _phoneController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      // ✅ NEW — Save FCM token after successful login
+      try {
+        String? token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          if (uid != null) {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .update({'fcmToken': token});
+            print('✅ FCM Token saved: $token');
+          }
+        }
+      } catch (e) {
+        print('FCM token error: $e');
+      }
+      // ✅ END NEW CODE
+
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -61,6 +84,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final result = await AuthService.signInWithGoogle();
+
+      // ✅ NEW — Save FCM token after Google login too
+      try {
+        String? token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          if (uid != null) {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .update({'fcmToken': token});
+            print('✅ FCM Token saved (Google): $token');
+          }
+        }
+      } catch (e) {
+        print('FCM token error: $e');
+      }
+      // ✅ END NEW CODE
+
       if (result != null && mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -171,17 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       : null,
                 ),
 
-                // Forgot password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Forget Password?',
-                      style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 8),
 
                 // Login button
@@ -203,6 +234,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen()),
+                    ),
+                    child: const Text.rich(
+                      TextSpan(
+                        text: 'Forgot your password? ',
+                        style:
+                            TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                        children: [
+                          TextSpan(
+                            text: 'Reset here',
+                            style: TextStyle(
+                              color: Color(0xFFB71C1C),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
                 // OR divider
                 Row(

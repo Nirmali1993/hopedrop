@@ -15,6 +15,7 @@ class AuthService {
   // Note: Firebase doesn't support phone+password directly.
   // We use email format: phone@hopedrop.app as a workaround.
   static Future<UserCredential?> registerWithPhone({
+    required String email,
     required String phone,
     required String password,
     required String name,
@@ -22,17 +23,13 @@ class AuthService {
     required String role, // 'donor' or 'recipient'
   }) async {
     try {
-      final email = '${phone.replaceAll(RegExp(r'[^0-9]'), '')}@hopedrop.app';
-
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Update display name
       await credential.user?.updateDisplayName(name);
 
-      // Save user data to Firestore
       if (credential.user != null) {
         await _db.collection('users').doc(credential.user!.uid).set({
           'uid': credential.user!.uid,
@@ -142,10 +139,32 @@ class AuthService {
   }
 
   // ── Reset password ───────────────────────────────────────────────────────────
-  static Future<void> resetPassword(String phone) async {
-    final email =
-        '${phone.replaceAll(RegExp(r'[^0-9]'), '')}@hopedrop.app';
+  // Looks up the real email from Firestore by phone, then sends the reset email.
+  // Returns the email address the reset was sent to.
+  static Future<String> resetPassword(String phone) async {
+    final query = await _db
+        .collection('users')
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'No account found with this phone number.',
+      );
+    }
+
+    final email = query.docs.first.data()['email'] as String?;
+    if (email == null || email.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'No account found with this phone number.',
+      );
+    }
+
     await _auth.sendPasswordResetEmail(email: email);
+    return email;
   }
 
   // ── Error handler ────────────────────────────────────────────────────────────
