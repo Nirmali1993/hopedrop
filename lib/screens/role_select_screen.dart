@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopedrop/l10n/app_localizations.dart';
 import 'register_screen.dart';
 
 class RoleSelectScreen extends StatelessWidget {
@@ -6,6 +7,8 @@ class RoleSelectScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ NEW
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -32,10 +35,10 @@ class RoleSelectScreen extends StatelessWidget {
               ),
               const SizedBox(height: 36),
 
-              // Title
-              const Text(
-                'What would you\nlike to do?',
-                style: TextStyle(
+              // ✅ TRANSLATED Title
+              Text(
+                l10n.chooseYourRole,
+                style: const TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A1A1A),
@@ -43,21 +46,21 @@ class RoleSelectScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Select your role to get started',
-                style: TextStyle(
+              Text(
+                l10n.selectLanguage,
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF9E9E9E),
                 ),
               ),
               const SizedBox(height: 48),
 
-              // Looking for a Donate card
+              // ✅ TRANSLATED Donor card
               _RoleCard(
                 imagePath: 'assets/images/img_woman_donate_bl.png',
                 fallbackIcon: Icons.volunteer_activism,
-                title: "I'm a Donor",
-                subtitle: 'I want to donate blood\nand save lives',
+                title: l10n.iAmDonor,
+                subtitle: l10n.donorDescription,
                 role: 'donor',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -67,12 +70,12 @@ class RoleSelectScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Looking for a Donor card
+              // ✅ TRANSLATED Recipient card
               _RoleCard(
                 imagePath: 'assets/images/img_woman_donate_bl.png',
                 fallbackIcon: Icons.search,
-                title: "I'm a Recipient",
-                subtitle: 'I need blood donation\nfor myself or someone',
+                title: l10n.iAmRecipient,
+                subtitle: l10n.recipientDescription,
                 role: 'recipient',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -83,18 +86,19 @@ class RoleSelectScreen extends StatelessWidget {
 
               const Spacer(),
 
-              // Already have account
+              // ✅ TRANSLATED Already have account
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text.rich(
+                  child: Text.rich(
                     TextSpan(
-                      text: 'Already have an account? ',
-                      style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                      text: '${l10n.alreadyHaveAccount} ',
+                      style: const TextStyle(
+                          color: Color(0xFF9E9E9E), fontSize: 14),
                       children: [
                         TextSpan(
-                          text: 'Login',
-                          style: TextStyle(
+                          text: l10n.login,
+                          style: const TextStyle(
                             color: Color(0xFFB71C1C),
                             fontWeight: FontWeight.w600,
                           ),
@@ -150,7 +154,6 @@ class _RoleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Illustration
             Container(
               width: 72,
               height: 72,
@@ -172,34 +175,22 @@ class _RoleCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A))),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF9E9E9E),
-                      height: 1.4,
-                    ),
-                  ),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF9E9E9E), height: 1.4)),
                 ],
               ),
             ),
-
-            // Arrow
             Container(
               width: 36,
               height: 36,
@@ -207,11 +198,8 @@ class _RoleCard extends StatelessWidget {
                 color: const Color(0xFFB71C1C),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: const Icon(Icons.arrow_forward_ios_rounded,
+                  color: Colors.white, size: 16),
             ),
           ],
         ),

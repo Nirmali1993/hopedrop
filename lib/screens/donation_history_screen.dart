@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../l10n/app_localizations.dart'; // âœ… NEW
 
 class DonationHistoryScreen extends StatefulWidget {
   const DonationHistoryScreen({super.key});
@@ -91,14 +92,15 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Donation History',
-          style:
-              TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
-        ),
+        // âœ… TRANSLATED
+        title: Text(l10n.donationHistory,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -124,10 +126,7 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
               ? _EmptyState()
               : Column(
                   children: [
-                    // ── Stats banner ───────────────────────
                     _StatsBanner(totalDonations: _donations.length),
-
-                    // ── Donation list ──────────────────────
                     Expanded(
                       child: ListView.separated(
                         padding: const EdgeInsets.all(16),
@@ -152,7 +151,7 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
   }
 }
 
-// ── Stats Banner ───────────────────────────────────────────────────────────────
+// â”€â”€ Stats Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _StatsBanner extends StatelessWidget {
   final int totalDonations;
@@ -160,6 +159,8 @@ class _StatsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -170,26 +171,21 @@ class _StatsBanner extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          // âœ… TRANSLATED
           _BannerStat(
             value: totalDonations.toString(),
-            label: 'Total\nDonations',
+            label: l10n.totalDonations,
             icon: Icons.water_drop_outlined,
           ),
           Container(
-            width: 1,
-            height: 40,
-            color: Colors.white.withValues(alpha: 0.3),
-          ),
+              width: 1, height: 40, color: Colors.white.withValues(alpha: 0.3)),
           _BannerStat(
             value: (totalDonations * 3).toString(),
-            label: 'Lives\nImpacted',
+            label: l10n.livesImpacted,
             icon: Icons.favorite_outline,
           ),
           Container(
-            width: 1,
-            height: 40,
-            color: Colors.white.withValues(alpha: 0.3),
-          ),
+              width: 1, height: 40, color: Colors.white.withValues(alpha: 0.3)),
           _BannerStat(
             value: '${totalDonations * 450}ml',
             label: 'Blood\nDonated',
@@ -234,7 +230,7 @@ class _BannerStat extends StatelessWidget {
   }
 }
 
-// ── Donation Card ──────────────────────────────────────────────────────────────
+// â”€â”€ Donation Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DonationCard extends StatelessWidget {
   final int index;
@@ -253,6 +249,8 @@ class _DonationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -269,7 +267,6 @@ class _DonationCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Donation number badge
           Container(
             width: 52,
             height: 52,
@@ -280,47 +277,37 @@ class _DonationCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  bloodType,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '#$index',
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7), fontSize: 10),
-                ),
+                Text(bloodType,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
+                Text('#$index',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 10)),
               ],
             ),
           ),
           const SizedBox(width: 14),
-
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  hospital,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
+                Text(hospital,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Color(0xFF1A1A1A))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined,
                         size: 12, color: Color(0xFF9E9E9E)),
                     const SizedBox(width: 4),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF9E9E9E)),
-                    ),
+                    Text(date,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF9E9E9E))),
                   ],
                 ),
                 if (nextEligible.isNotEmpty) ...[
@@ -330,19 +317,16 @@ class _DonationCard extends StatelessWidget {
                       const Icon(Icons.event_available_outlined,
                           size: 12, color: Colors.green),
                       const SizedBox(width: 4),
-                      Text(
-                        'Next eligible: $nextEligible',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.green),
-                      ),
+                      // âœ… TRANSLATED
+                      Text('Next ${l10n.eligibleToDonate}: $nextEligible',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.green)),
                     ],
                   ),
                 ],
               ],
             ),
           ),
-
-          // Lives saved badge
           Column(
             children: [
               Container(
@@ -355,13 +339,11 @@ class _DonationCard extends StatelessWidget {
                   children: [
                     Icon(Icons.favorite, color: Color(0xFFB71C1C), size: 12),
                     SizedBox(width: 4),
-                    Text(
-                      '3 lives',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFFB71C1C),
-                          fontWeight: FontWeight.w600),
-                    ),
+                    Text('3 lives',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFB71C1C),
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -373,11 +355,13 @@ class _DonationCard extends StatelessWidget {
   }
 }
 
-// ── Empty State ────────────────────────────────────────────────────────────────
+// â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -395,13 +379,12 @@ class _EmptyState extends StatelessWidget {
                   size: 48, color: Color(0xFFB71C1C)),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'No donations yet',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A)),
-            ),
+            // âœ… TRANSLATED
+            Text(l10n.noRequestsYet,
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A))),
             const SizedBox(height: 8),
             const Text(
               'Your donation history will appear here after you record your first donation.',
@@ -413,7 +396,8 @@ class _EmptyState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Go to Profile'),
+              // âœ… TRANSLATED
+              label: Text(l10n.profile),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C),
                 foregroundColor: Colors.white,

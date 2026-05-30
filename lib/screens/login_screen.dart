@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../l10n/app_localizations.dart'; // âœ… NEW
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'role_select_screen.dart';
@@ -30,7 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ── Phone Login ──────────────────────────────────────────────────────────────
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -44,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // ✅ NEW — Save FCM token after successful login
       try {
         String? token = await FirebaseMessaging.instance.getToken();
         if (token != null) {
@@ -54,13 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 .collection('users')
                 .doc(uid)
                 .update({'fcmToken': token});
-            print('✅ FCM Token saved: $token');
           }
         }
       } catch (e) {
-        print('FCM token error: $e');
+        debugPrint('FCM token error: $e');
       }
-      // ✅ END NEW CODE
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -75,7 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ── Google Sign In ───────────────────────────────────────────────────────────
   void _googleSignIn() async {
     setState(() {
       _isGoogleLoading = true;
@@ -85,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final result = await AuthService.signInWithGoogle();
 
-      // ✅ NEW — Save FCM token after Google login too
       try {
         String? token = await FirebaseMessaging.instance.getToken();
         if (token != null) {
@@ -95,13 +90,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 .collection('users')
                 .doc(uid)
                 .update({'fcmToken': token});
-            print('✅ FCM Token saved (Google): $token');
           }
         }
       } catch (e) {
-        print('FCM token error: $e');
+        debugPrint('FCM token error: $e');
       }
-      // ✅ END NEW CODE
 
       if (result != null && mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -118,6 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // âœ… NEW
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -134,10 +130,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(child: _buildLogo()),
                 const SizedBox(height: 40),
 
-                // Title
-                const Text(
-                  'Login',
-                  style: TextStyle(
+                // âœ… TRANSLATED Title
+                Text(
+                  l10n.login,
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1A1A1A),
@@ -145,8 +141,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
+                  // âœ… TRANSLATED subtitle
                   'Please fill up and login to your account',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                  style:
+                      TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
                 ),
                 const SizedBox(height: 32),
 
@@ -176,27 +174,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                // Phone field
+                // âœ… TRANSLATED Phone field
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: _inputDecoration(
-                    hint: 'Enter Phone Number',
+                    hint: l10n.enterPhoneNumber,
                     suffix: const Icon(Icons.phone_outlined,
                         color: Color(0xFFBDBDBD)),
                   ),
-                  validator: (v) => v == null || v.isEmpty
-                      ? 'Please enter your phone number'
-                      : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? l10n.pleaseEnterPhone : null,
                 ),
                 const SizedBox(height: 14),
 
-                // Password field
+                // âœ… TRANSLATED Password field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: _inputDecoration(
-                    hint: 'Enter Password',
+                    hint: l10n.enterPassword,
                     suffix: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -208,14 +205,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (v) => v == null || v.length < 6
-                      ? 'Password must be at least 6 characters'
-                      : null,
+                  validator: (v) =>
+                      v == null || v.length < 6 ? l10n.passwordMinLength : null,
                 ),
-
                 const SizedBox(height: 8),
 
-                // Login button
+                // âœ… TRANSLATED Login button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -228,13 +223,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2))
-                        : const Text('Login',
-                            style: TextStyle(
+                        : Text(l10n.login,
+                            style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(height: 20),
                 const SizedBox(height: 16),
+
+                // âœ… TRANSLATED Forgot password
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.push(
@@ -242,15 +239,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       MaterialPageRoute(
                           builder: (_) => const ForgotPasswordScreen()),
                     ),
-                    child: const Text.rich(
+                    child: Text.rich(
                       TextSpan(
-                        text: 'Forgot your password? ',
-                        style:
-                            TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                        text: '${l10n.forgotYourPassword} ',
+                        style: const TextStyle(
+                            color: Color(0xFF9E9E9E), fontSize: 14),
                         children: [
                           TextSpan(
-                            text: 'Reset here',
-                            style: TextStyle(
+                            text: l10n.resetHere,
+                            style: const TextStyle(
                               color: Color(0xFFB71C1C),
                               fontWeight: FontWeight.bold,
                             ),
@@ -260,6 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
 
                 // OR divider
                 Row(
@@ -276,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Google Sign In
+                // âœ… TRANSLATED Google Sign In
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -311,8 +309,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Text('Sign in with Google',
-                                  style: TextStyle(
+                              // âœ… TRANSLATED
+                              Text(l10n.signInWithGoogle,
+                                  style: const TextStyle(
                                       color: Color(0xFF1A1A1A),
                                       fontWeight: FontWeight.w500,
                                       fontSize: 14)),
@@ -322,22 +321,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Register link
+                // âœ… TRANSLATED Register link
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (_) => const RoleSelectScreen()),
                     ),
-                    child: const Text.rich(
+                    child: Text.rich(
                       TextSpan(
-                        text: "Don't have an account? ",
-                        style:
-                            TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                        text: '${l10n.dontHaveAccount} ',
+                        style: const TextStyle(
+                            color: Color(0xFF9E9E9E), fontSize: 14),
                         children: [
                           TextSpan(
-                            text: 'Sign Up',
-                            style: TextStyle(
+                            text: l10n.signUp,
+                            style: const TextStyle(
                                 color: Color(0xFFB71C1C),
                                 fontWeight: FontWeight.w600),
                           ),

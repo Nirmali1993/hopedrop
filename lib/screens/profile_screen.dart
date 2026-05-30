@@ -1,17 +1,21 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart'; // âœ… NEW
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/language_service.dart';
 import '../services/location_service.dart';
 import '../services/rating_service.dart';
 import '../widgets/star_rating.dart';
 import 'donation_history_screen.dart';
 import 'login_screen.dart';
 import 'notification_settings_screen.dart';
+import 'language_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -57,57 +61,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ── Pick & Upload Photo ────────────────────────────────────────────────────
   Future<void> _pickPhoto(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 400,
         maxHeight: 400,
-        imageQuality: 70, // Compress to keep base64 small
+        imageQuality: 70,
       );
-
       if (image == null) return;
-
       setState(() => _isUploadingPhoto = true);
-
-      // Read file and convert to base64
       final File file = File(image.path);
       final bytes = await file.readAsBytes();
       final base64String = base64Encode(bytes);
-
-      // Save to Firestore
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update({'photoBase64': base64String});
-
         await _loadUserData();
       }
-
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Profile photo updated!'),
+          SnackBar(
+            content: Text('âœ… ${l10n.profilePhotoUpdated}'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
   }
 
-  // ── Show photo picker options ──────────────────────────────────────────────
   void _showPhotoOptions() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -127,17 +122,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Update Profile Photo',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
+            // âœ… TRANSLATED
+            Text(l10n.updateProfilePhoto,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A))),
             const SizedBox(height: 20),
-
-            // Camera option
             ListTile(
               onTap: () {
                 Navigator.pop(context);
@@ -153,15 +144,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: const Icon(Icons.camera_alt_outlined,
                     color: Color(0xFFB71C1C)),
               ),
-              title: const Text('Take a Photo',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              // âœ… TRANSLATED
+              title: Text(l10n.takePhoto,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle:
-                  const Text('Use your camera', style: TextStyle(fontSize: 12)),
+                  Text(l10n.useCamera, style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.arrow_forward_ios_rounded,
                   size: 14, color: Color(0xFF9E9E9E)),
             ),
-
-            // Gallery option
             ListTile(
               onTap: () {
                 Navigator.pop(context);
@@ -177,15 +167,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: const Icon(Icons.photo_library_outlined,
                     color: Colors.blue),
               ),
-              title: const Text('Choose from Gallery',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Pick from your photos',
-                  style: TextStyle(fontSize: 12)),
+              // âœ… TRANSLATED
+              title: Text(l10n.chooseFromGallery,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(l10n.pickFromPhotos,
+                  style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.arrow_forward_ios_rounded,
                   size: 14, color: Color(0xFF9E9E9E)),
             ),
-
-            // Remove photo option
             if (_userData?['photoBase64'] != null)
               ListTile(
                 onTap: () async {
@@ -208,8 +197,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: const Icon(Icons.delete_outline, color: Colors.grey),
                 ),
-                title: const Text('Remove Photo',
-                    style: TextStyle(
+                // âœ… TRANSLATED
+                title: Text(l10n.removePhoto,
+                    style: const TextStyle(
                         fontWeight: FontWeight.w600, color: Colors.grey)),
               ),
             const SizedBox(height: 8),
@@ -219,29 +209,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── Toggle availability ────────────────────────────────────────────────────
-  // ── Update Location ────────────────────────────────────────────────────────
   Future<void> _updateLocation() async {
     setState(() => _isUpdatingLocation = true);
-
     final success = await LocationService.saveLocationToFirestore();
-
     if (mounted) {
       setState(() => _isUpdatingLocation = false);
+      final l10n = AppLocalizations.of(context)!;
       if (success) {
         await _loadUserData();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Location updated successfully!'),
+          SnackBar(
+            content: Text('âœ… ${l10n.locationUpdated}'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                '❌ Could not get location. Please allow location permission.'),
-            backgroundColor: Color(0xFFB71C1C),
+          SnackBar(
+            content: Text('âŒ ${l10n.locationError}'),
+            backgroundColor: const Color(0xFFB71C1C),
           ),
         );
       }
@@ -259,34 +245,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ── Record donation dialog ─────────────────────────────────────────────────
   void _showRecordDonationDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final hospitalController = TextEditingController();
     final bloodType = _userData?['bloodType'] ?? 'O+';
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.water_drop, color: Color(0xFFB71C1C)),
-            SizedBox(width: 8),
-            Text('Record Donation'),
+            const Icon(Icons.water_drop, color: Color(0xFFB71C1C)),
+            const SizedBox(width: 8),
+            // âœ… TRANSLATED
+            Text(l10n.recordDonation),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Recording a donation will mark you unavailable for 90 days.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
-            ),
+            // âœ… TRANSLATED
+            Text(l10n.recordDonationMsg,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E))),
             const SizedBox(height: 16),
             TextField(
               controller: hospitalController,
               decoration: InputDecoration(
-                labelText: 'Hospital Name',
+                // âœ… TRANSLATED
+                labelText: l10n.hospitalName,
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
@@ -309,14 +295,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Icon(Icons.info_outline,
                       color: Color(0xFFB71C1C), size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    'Blood type: $bloodType',
-                    style: const TextStyle(
-                      color: Color(0xFFB71C1C),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+                  // âœ… TRANSLATED
+                  Text('${l10n.bloodType}: $bloodType',
+                      style: const TextStyle(
+                          color: Color(0xFFB71C1C),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
                 ],
               ),
             ),
@@ -325,8 +309,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF9E9E9E))),
+            // âœ… TRANSLATED
+            child: Text(l10n.cancel,
+                style: const TextStyle(color: Color(0xFF9E9E9E))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -340,43 +325,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 await _checkEligibilityAndLoad();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          '✅ Donation recorded! Eligible again in 90 days.'),
+                    SnackBar(
+                      content: Text('âœ… ${l10n.donationRecorded}'),
                       backgroundColor: Colors.green,
-                      duration: Duration(seconds: 4),
+                      duration: const Duration(seconds: 4),
                     ),
                   );
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C)),
-            child: const Text('Confirm'),
+            // âœ… TRANSLATED
+            child: Text(l10n.confirmDonation),
           ),
         ],
       ),
     );
   }
 
-  // ── Sign out ───────────────────────────────────────────────────────────────
   Future<void> _signOut() async {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        // âœ… TRANSLATED
+        title: Text(l10n.logout),
+        content: Text(l10n.areYouSureLogout),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child:
+                Text(l10n.cancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -391,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C)),
-            child: const Text('Logout'),
+            child: Text(l10n.logout),
           ),
         ],
       ),
@@ -400,6 +386,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -421,7 +409,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('My Profile'),
+        // âœ… TRANSLATED
+        title: Text(l10n.myProfile),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -439,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // ── Profile Header ──────────────────────────────────────
+              // â”€â”€ Profile Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 28),
@@ -452,22 +441,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    // ── Profile Photo ──────────────────────────────
                     GestureDetector(
                       onTap: _showPhotoOptions,
                       child: Stack(
                         alignment: Alignment.bottomRight,
                         children: [
-                          // Avatar / Photo
                           Container(
                             width: 100,
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFFB71C1C),
-                                width: 2.5,
-                              ),
+                                  color: const Color(0xFFB71C1C), width: 2.5),
                             ),
                             child: ClipOval(
                               child: _isUploadingPhoto
@@ -484,8 +469,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       : _defaultAvatar(name),
                             ),
                           ),
-
-                          // Camera icon overlay
                           Container(
                             width: 32,
                             height: 32,
@@ -494,14 +477,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            child: const Icon(Icons.camera_alt,
+                                color: Colors.white, size: 16),
                           ),
-
-                          // Blood type badge
                           Positioned(
                             top: 0,
                             right: 0,
@@ -512,60 +490,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: const Color(0xFFB71C1C),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(
-                                bloodType,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                ),
-                              ),
+                              child: Text(bloodType,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11)),
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Tap to change photo',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
-                    ),
+                    // âœ… TRANSLATED
+                    Text(l10n.tapToChangePhoto,
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFF9E9E9E))),
                     const SizedBox(height: 12),
-
-                    // Name
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
+                    Text(name,
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A))),
                     const SizedBox(height: 4),
-                    Text(
-                      '${isDonor ? 'Donor' : 'Recipient'} • $phone',
-                      style: const TextStyle(
-                          fontSize: 14, color: Color(0xFF9E9E9E)),
-                    ),
+                    // âœ… TRANSLATED
+                    Text('${isDonor ? l10n.donor : l10n.recipient} - $phone',
+                        style: const TextStyle(
+                            fontSize: 14, color: Color(0xFF9E9E9E))),
                     const SizedBox(height: 16),
-
-                    // Stats
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // âœ… TRANSLATED
                         _StatItem(
                             value: totalDonations.toString(),
-                            label: 'Donations'),
+                            label: l10n.totalDonations),
                         _divider(),
                         _StatItem(
                             value: (totalDonations * 3).toString(),
-                            label: 'Lives\nImpacted'),
+                            label: l10n.livesImpacted),
                         _divider(),
-                        _StatItem(value: bloodType, label: 'Blood\nType'),
+                        _StatItem(value: bloodType, label: l10n.bloodType),
                       ],
                     ),
-
-                    // Rating display for donors
                     if (isDonor) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -591,15 +557,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   RatingService.getAverageRating(
                                               _userData ?? {}) ==
                                           0
-                                      ? 'No ratings yet'
+                                      // âœ… TRANSLATED
+                                      ? l10n.noRatingsYet
                                       : RatingService.getAverageRating(
                                               _userData ?? {})
                                           .toStringAsFixed(1),
                                   style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFFB300),
-                                  ),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFFFB300)),
                                 ),
                                 Text(
                                   '${RatingService.getRatingCount(_userData ?? {})} rating${RatingService.getRatingCount(_userData ?? {}) != 1 ? 's' : ''}',
@@ -620,8 +586,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ],
-
-                    // Donor eligibility section
                     if (isDonor) ...[
                       const SizedBox(height: 16),
                       if (_isAvailable)
@@ -648,14 +612,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Available to Donate',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                                  // âœ… TRANSLATED
+                                  Text(l10n.availableToDonate,
+                                      style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14)),
                                 ],
                               ),
                               Switch(
@@ -677,19 +639,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: Column(
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(Icons.timer_outlined,
+                                  const Icon(Icons.timer_outlined,
                                       color: Colors.orange, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Not Eligible Yet',
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                                  const SizedBox(width: 8),
+                                  // âœ… TRANSLATED
+                                  Text(l10n.notEligibleYet,
+                                      style: const TextStyle(
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14)),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -697,18 +657,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    '$daysLeft days remaining',
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '${90 - daysLeft}/90 days',
-                                    style: const TextStyle(
-                                        fontSize: 11, color: Colors.orange),
-                                  ),
+                                  // âœ… TRANSLATED
+                                  Text('$daysLeft ${l10n.daysRemaining}',
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.w600)),
+                                  Text('${90 - daysLeft}/90 ${l10n.days}',
+                                      style: const TextStyle(
+                                          fontSize: 11, color: Colors.orange)),
                                 ],
                               ),
                               const SizedBox(height: 6),
@@ -736,9 +693,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onPressed: _showRecordDonationDialog,
                               icon: const Icon(Icons.water_drop,
                                   color: Colors.white),
-                              label: const Text('Record a Donation',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w600)),
+                              // âœ… TRANSLATED
+                              label: Text(l10n.recordADonation,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFB71C1C),
                                 foregroundColor: Colors.white,
@@ -757,38 +715,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 8),
 
-              // ── Info Card ───────────────────────────────────────────
+              // â”€â”€ Personal Information â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _SectionCard(
-                title: 'Personal Information',
+                // âœ… TRANSLATED
+                title: l10n.personalInformation,
                 children: [
                   _InfoRow(
                       icon: Icons.person_outline,
-                      label: 'Full Name',
+                      label: l10n.fullName,
                       value: name),
                   _InfoRow(
-                      icon: Icons.phone_outlined, label: 'Phone', value: phone),
+                      icon: Icons.phone_outlined,
+                      label: l10n.phone,
+                      value: phone),
                   _InfoRow(
                       icon: Icons.water_drop_outlined,
-                      label: 'Blood Type',
+                      label: l10n.bloodType,
                       value: bloodType),
                   _InfoRow(
                       icon: Icons.location_on_outlined,
-                      label: 'Location',
-                      value: _userData?['location'] ?? 'Not set'),
+                      label: l10n.location,
+                      value: _userData?['location'] ?? l10n.notSet),
                   _InfoRow(
                       icon: Icons.volunteer_activism_outlined,
-                      label: 'Role',
-                      value: isDonor ? 'Blood Donor' : 'Blood Recipient'),
+                      label: l10n.role,
+                      value: isDonor ? l10n.bloodDonor : l10n.bloodRecipient),
                 ],
               ),
 
+              // â”€â”€ Account â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _SectionCard(
-                title: 'Account',
+                // âœ… TRANSLATED
+                title: l10n.account,
                 children: [
                   _MenuItem(
                     icon: Icons.history_outlined,
-                    title: 'Donation History',
-                    subtitle: '$totalDonations donations made',
+                    // âœ… TRANSLATED
+                    title: l10n.donationHistory,
+                    subtitle: '$totalDonations ${l10n.totalDonations}',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -797,13 +761,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _LocationMenuItem(
                     isUpdating: _isUpdatingLocation,
-                    location: _userData?['location'] ?? 'Not set',
+                    location: _userData?['location'] ?? l10n.notSet,
                     onTap: _updateLocation,
                   ),
                   _MenuItem(
                     icon: Icons.notifications_outlined,
-                    title: 'Notifications',
-                    subtitle: 'Manage alerts',
+                    // âœ… TRANSLATED
+                    title: l10n.notifications,
+                    subtitle: l10n.manageAlerts,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -813,25 +778,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
 
+              // â”€â”€ More â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _SectionCard(
-                title: 'More',
+                // âœ… TRANSLATED
+                title: l10n.more,
                 children: [
+                  Consumer<LanguageService>(
+                    builder: (context, langService, _) => _MenuItem(
+                      icon: Icons.language_outlined,
+                      // âœ… TRANSLATED
+                      title: l10n.languageSettings,
+                      subtitle: langService.getLanguageName(
+                          langService.currentLocale.languageCode),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const LanguageScreen()),
+                      ),
+                    ),
+                  ),
                   _MenuItem(
                     icon: Icons.help_outline,
-                    title: 'Help & Support',
+                    // âœ… TRANSLATED
+                    title: l10n.helpSupport,
                     subtitle: 'Get help anytime',
                     onTap: () {},
                   ),
                   _MenuItem(
                     icon: Icons.info_outline,
-                    title: 'About HopeDrop',
-                    subtitle: 'Version 1.0.0',
+                    // âœ… TRANSLATED
+                    title: l10n.aboutHopeDrop,
+                    subtitle: l10n.version100,
                     onTap: () {},
                   ),
                 ],
               ),
 
-              // ── Logout ──────────────────────────────────────────────
+              // â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 child: SizedBox(
@@ -841,8 +824,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: _signOut,
                     icon: const Icon(Icons.logout_outlined,
                         color: Color(0xFFB71C1C)),
-                    label: const Text('Logout',
-                        style: TextStyle(
+                    // âœ… TRANSLATED
+                    label: Text(l10n.logout,
+                        style: const TextStyle(
                             color: Color(0xFFB71C1C),
                             fontWeight: FontWeight.w600,
                             fontSize: 16)),
@@ -862,7 +846,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── Default avatar widget ──────────────────────────────────────────────────
   Widget _defaultAvatar(String name) {
     return Container(
       color: const Color(0xFFFFEBEE),
@@ -870,10 +853,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : 'U',
           style: const TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFB71C1C),
-          ),
+              fontSize: 40,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFB71C1C)),
         ),
       ),
     );
@@ -886,25 +868,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 24),
       );
 
-  // ── Edit dialog ────────────────────────────────────────────────────────────
   void _showEditDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final nameController =
         TextEditingController(text: _userData?['name'] ?? '');
     final phoneController =
         TextEditingController(text: _userData?['phone'] ?? '');
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Profile'),
+        // âœ… TRANSLATED
+        title: Text(l10n.editProfile),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: 'Full Name',
+                // âœ… TRANSLATED
+                labelText: l10n.fullName,
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
@@ -920,7 +903,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: phoneController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                labelText: 'Phone Number',
+                // âœ… TRANSLATED
+                labelText: l10n.phoneNumber,
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
@@ -936,7 +920,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child:
+                Text(l10n.cancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -955,7 +940,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C)),
-            child: const Text('Save'),
+            // âœ… TRANSLATED
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -963,7 +949,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Helper Widgets ─────────────────────────────────────────────────────────────
+// â”€â”€ Helper Widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _StatItem extends StatelessWidget {
   final String value;
@@ -1084,6 +1070,8 @@ class _LocationMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return ListTile(
       onTap: isUpdating ? null : onTap,
       leading: Container(
@@ -1102,13 +1090,15 @@ class _LocationMenuItem extends StatelessWidget {
             : const Icon(Icons.location_on_outlined,
                 color: Color(0xFFB71C1C), size: 20),
       ),
-      title: const Text('My Location',
-          style: TextStyle(
+      // âœ… TRANSLATED
+      title: Text(l10n.myLocation,
+          style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Color(0xFF1A1A1A))),
       subtitle: Text(
-        isUpdating ? 'Getting location...' : location,
+        // âœ… TRANSLATED
+        isUpdating ? l10n.gettingLocation : location,
         style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
       ),
       trailing: isUpdating

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hopedrop/l10n/app_localizations.dart';
 import '../services/database_service.dart';
 
 class AllRequestsScreen extends StatefulWidget {
@@ -15,20 +16,28 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
   String _selectedUrgency = 'All';
 
   final List<String> _bloodTypes = [
-    'Any', 'A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'
+    'Any',
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-'
   ];
   final List<String> _urgencies = ['All', 'Urgent', 'High', 'Normal'];
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'All Requests',
-          style: TextStyle(
-              fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
-        ),
+        title: Text(l10n.allRequests,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -39,7 +48,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
       ),
       body: Column(
         children: [
-          // ── Filters ─────────────────────────────────────────────────
           // Blood type chips
           SizedBox(
             height: 40,
@@ -51,11 +59,11 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
               itemBuilder: (_, i) {
                 final bt = _bloodTypes[i];
                 final isSelected = _selectedBloodType == bt;
+                final label = bt == 'Any' ? l10n.all : bt;
                 return FilterChip(
-                  label: Text(bt),
+                  label: Text(label),
                   selected: isSelected,
-                  onSelected: (_) =>
-                      setState(() => _selectedBloodType = bt),
+                  onSelected: (_) => setState(() => _selectedBloodType = bt),
                   selectedColor: const Color(0xFFB71C1C),
                   checkmarkColor: Colors.white,
                   labelStyle: TextStyle(
@@ -89,11 +97,20 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
                         : u == 'Normal'
                             ? Colors.green
                             : const Color(0xFF1A1A1A);
+
+                final label = u == 'Urgent'
+                    ? l10n.urgent
+                    : u == 'High'
+                        ? l10n.high
+                        : u == 'Normal'
+                            ? l10n.normal
+                            : l10n.all;
+
                 return GestureDetector(
                   onTap: () => setState(() => _selectedUrgency = u),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? color.withValues(alpha: 0.12)
@@ -103,14 +120,11 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
                         color: isSelected ? color : Colors.transparent,
                       ),
                     ),
-                    child: Text(
-                      u,
-                      style: TextStyle(
-                        color: isSelected ? color : const Color(0xFF9E9E9E),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: Text(label,
+                        style: TextStyle(
+                            color: isSelected ? color : const Color(0xFF9E9E9E),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ),
                 );
               },
@@ -118,28 +132,26 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
           ),
           const SizedBox(height: 8),
 
-          // ── Request list ─────────────────────────────────────────────
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: DatabaseService.getActiveBloodRequests(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFFB71C1C)),
+                    child: CircularProgressIndicator(color: Color(0xFFB71C1C)),
                   );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.water_drop_outlined,
+                        const Icon(Icons.water_drop_outlined,
                             size: 64, color: Color(0xFFB71C1C)),
-                        SizedBox(height: 16),
-                        Text('No active requests',
-                            style: TextStyle(
+                        const SizedBox(height: 16),
+                        Text(l10n.noRequestsYet,
+                            style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1A1A1A))),
@@ -165,7 +177,7 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
                       child: Row(
                         children: [
                           Text(
-                            '${docs.length} active request${docs.length != 1 ? 's' : ''}',
+                            '${docs.length} ${l10n.active}',
                             style: const TextStyle(
                                 color: Color(0xFF9E9E9E), fontSize: 13),
                           ),
@@ -177,12 +189,10 @@ class _AllRequestsScreenState extends State<AllRequestsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 4),
                         itemCount: docs.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (_, i) {
                           final doc = docs[i];
-                          final data =
-                              doc.data() as Map<String, dynamic>;
+                          final data = doc.data() as Map<String, dynamic>;
                           return _RequestCard(
                             requestId: doc.id,
                             data: data,
@@ -226,12 +236,20 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final bloodType = data['bloodType'] ?? '?';
     final hospital = data['hospital'] ?? 'Unknown';
     final location = data['location'] ?? '';
     final units = data['units'] ?? 1;
     final urgency = data['urgency'] ?? 'Normal';
     final patientName = data['patientName'] ?? '';
+
+    final urgencyLabel = urgency == 'Urgent'
+        ? l10n.urgent
+        : urgency == 'High'
+            ? l10n.high
+            : l10n.normal;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -249,7 +267,6 @@ class _RequestCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Blood type circle
           Container(
             width: 56,
             height: 56,
@@ -258,36 +275,26 @@ class _RequestCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
-            child: Text(
-              bloodType,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text(bloodType,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 12),
-
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  hospital,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                if (patientName.isNotEmpty)
-                  Text(
-                    patientName,
+                Text(hospital,
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF9E9E9E)),
-                  ),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Color(0xFF1A1A1A))),
+                if (patientName.isNotEmpty)
+                  Text(patientName,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF9E9E9E))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -295,43 +302,36 @@ class _RequestCard extends StatelessWidget {
                       const Icon(Icons.location_on_outlined,
                           size: 12, color: Color(0xFF9E9E9E)),
                       const SizedBox(width: 2),
-                      Text(location,
-                          style: const TextStyle(
-                              fontSize: 12, color: Color(0xFF9E9E9E))),
+                      Flexible(
+                        child: Text(location,
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF9E9E9E))),
+                      ),
                       const SizedBox(width: 8),
                     ],
-                    Text(
-                      '$units Unit Needed',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFB71C1C),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    Text('$units ${l10n.unitNeeded}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFB71C1C),
+                            fontWeight: FontWeight.w500)),
                   ],
                 ),
               ],
             ),
           ),
-
-          // Urgency + Help button
           Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: _urgencyColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  urgency,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: _urgencyColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: Text(urgencyLabel,
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: _urgencyColor,
+                        fontWeight: FontWeight.w600)),
               ),
               const SizedBox(height: 6),
               if (isDonorEligible)
@@ -340,9 +340,9 @@ class _RequestCard extends StatelessWidget {
                     await DatabaseService.respondToRequest(requestId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Response sent!'),
-                          backgroundColor: Color(0xFFB71C1C),
+                        SnackBar(
+                          content: Text('✅ ${l10n.responded}!'),
+                          backgroundColor: const Color(0xFFB71C1C),
                         ),
                       );
                     }
@@ -356,7 +356,7 @@ class _RequestCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
-                  child: const Text('Help'),
+                  child: Text(l10n.respond),
                 )
               else
                 Container(

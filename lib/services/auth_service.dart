@@ -7,20 +7,21 @@ class AuthService {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
   static final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  // ── Current user ────────────────────────────────────────────────────────────
+  // ── Current user ─────────────────────────────────────────────────────────
   static User? get currentUser => _auth.currentUser;
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ── Register with phone + password ──────────────────────────────────────────
-  // Note: Firebase doesn't support phone+password directly.
-  // We use email format: phone@hopedrop.app as a workaround.
+  // ── Register with phone + password ───────────────────────────────────────
   static Future<UserCredential?> registerWithPhone({
     required String email,
     required String phone,
     required String password,
     required String name,
     required String bloodType,
-    required String role, // 'donor' or 'recipient'
+    required String role,
+    int? age, // ✅ NEW
+    double? weight, // ✅ NEW
+    DateTime? lastDonationDate, // ✅ NEW
   }) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -31,7 +32,8 @@ class AuthService {
       await credential.user?.updateDisplayName(name);
 
       if (credential.user != null) {
-        await _db.collection('users').doc(credential.user!.uid).set({
+        // ✅ Build user data map
+        final Map<String, dynamic> userData = {
           'uid': credential.user!.uid,
           'name': name,
           'phone': phone,
@@ -42,7 +44,18 @@ class AuthService {
           'totalDonations': 0,
           'location': '',
           'createdAt': FieldValue.serverTimestamp(),
-        });
+        };
+
+        // ✅ Add donor-specific fields if role is donor
+        if (role == 'donor') {
+          if (age != null) userData['age'] = age;
+          if (weight != null) userData['weight'] = weight;
+          if (lastDonationDate != null) {
+            userData['lastDonationDate'] = Timestamp.fromDate(lastDonationDate);
+          }
+        }
+
+        await _db.collection('users').doc(credential.user!.uid).set(userData);
       }
 
       return credential;
@@ -51,26 +64,24 @@ class AuthService {
     }
   }
 
-  // ── Login with phone + password ──────────────────────────────────────────────
+  // ── Login with phone + password ──────────────────────────────────────────
   static Future<UserCredential?> loginWithPhone({
     required String phone,
     required String password,
   }) async {
     try {
       final email = '${phone.replaceAll(RegExp(r'[^0-9]'), '')}@hopedrop.app';
-
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
       return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     }
   }
 
-  // ── Google Sign In ───────────────────────────────────────────────────────────
+  // ── Google Sign In ────────────────────────────────────────────────────────
   static Future<UserCredential?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -86,17 +97,11 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
 
-      // Save/update user in Firestore if new
-      final userDoc = await _db
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
+      final userDoc =
+          await _db.collection('users').doc(userCredential.user!.uid).get();
 
       if (!userDoc.exists) {
-        await _db
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .set({
+        await _db.collection('users').doc(userCredential.user!.uid).set({
           'uid': userCredential.user!.uid,
           'name': userCredential.user!.displayName ?? '',
           'email': userCredential.user!.email ?? '',
@@ -116,13 +121,13 @@ class AuthService {
     }
   }
 
-  // ── Sign Out ─────────────────────────────────────────────────────────────────
+  // ── Sign Out ──────────────────────────────────────────────────────────────
   static Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
-  // ── Get user profile from Firestore ─────────────────────────────────────────
+  // ── Get user profile ──────────────────────────────────────────────────────
   static Future<Map<String, dynamic>?> getUserProfile(String uid) async {
     try {
       final doc = await _db.collection('users').doc(uid).get();
@@ -132,15 +137,13 @@ class AuthService {
     }
   }
 
-  // ── Update user profile ──────────────────────────────────────────────────────
+  // ── Update user profile ───────────────────────────────────────────────────
   static Future<void> updateUserProfile(
       String uid, Map<String, dynamic> data) async {
     await _db.collection('users').doc(uid).update(data);
   }
 
-  // ── Reset password ───────────────────────────────────────────────────────────
-  // Looks up the real email from Firestore by phone, then sends the reset email.
-  // Returns the email address the reset was sent to.
+  // ── Reset password ────────────────────────────────────────────────────────
   static Future<String> resetPassword(String phone) async {
     final query = await _db
         .collection('users')
@@ -167,7 +170,7 @@ class AuthService {
     return email;
   }
 
-  // ── Error handler ────────────────────────────────────────────────────────────
+  // ── Error handler ─────────────────────────────────────────────────────────
   static String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':

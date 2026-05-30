@@ -1,9 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart'; // âœ… NEW
 import '../services/auth_service.dart';
 import 'donor_search_screen.dart';
 import 'blood_request_screen.dart';
@@ -94,18 +95,16 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
       final List<_ResponseData> items = [];
 
       for (final doc in requestSnap.docs) {
-        if (items.length >= 2) break;  
+        if (items.length >= 2) break;
         final data = doc.data();
         final respondedBy = List<String>.from(data['respondedBy'] ?? []);
 
         for (final donorId in respondedBy) {
           if (items.length >= 2) break;
-
           final donorDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(donorId)
               .get();
-
           if (!donorDoc.exists) continue;
           final donorData = donorDoc.data();
           if (donorData == null) continue;
@@ -133,6 +132,8 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     final name = _cachedName ?? widget.userData?['name'] ?? 'Hero';
     final firstName = name.split(' ')[0];
     final bloodType = _cachedBloodType ?? widget.userData?['bloodType'] ?? '';
@@ -150,7 +151,7 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
         color: const Color(0xFFB71C1C),
         child: CustomScrollView(
           slivers: [
-            // ── Header ──────────────────────────────────────────────
+            // â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             SliverToBoxAdapter(
               child: Stack(
                 children: [
@@ -181,16 +182,19 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                                 color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
-                                  Icon(Icons.search,
+                                  const Icon(Icons.search,
                                       color: Colors.white, size: 14),
-                                  SizedBox(width: 4),
-                                  Text("I'm a Recipient 🎯",
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 4),
+                                  // âœ… TRANSLATED
+                                  Text(
+                                    "${l10n.iAmRecipient} ðŸŽ¯",
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600),
+                                  ),
                                 ],
                               ),
                             ),
@@ -200,7 +204,8 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                                     color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold)),
-                            Text('Hello, $firstName!',
+                            // âœ… TRANSLATED
+                            Text('${l10n.hello}, $firstName!',
                                 style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.85),
                                     fontSize: 13)),
@@ -254,7 +259,7 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
               ),
             ),
 
-            // ── Banner Slider ────────────────────────────────────────
+            // â”€â”€ Banner Slider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               sliver: SliverToBoxAdapter(
@@ -313,7 +318,7 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
               ),
             ),
 
-            // ── Quick Actions ────────────────────────────────────────
+            // â”€â”€ Quick Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               sliver: SliverToBoxAdapter(
@@ -322,7 +327,8 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                     Expanded(
                       child: _ActionCard(
                         icon: Icons.search,
-                        title: 'Find Donor',
+                        // âœ… TRANSLATED
+                        title: l10n.findDonors,
                         subtitle: 'Search nearby',
                         color: const Color(0xFFFFEBEE),
                         iconColor: const Color(0xFFB71C1C),
@@ -337,7 +343,8 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                     Expanded(
                       child: _ActionCard(
                         icon: Icons.add_circle_outline,
-                        title: 'Request Blood',
+                        // âœ… TRANSLATED
+                        title: l10n.postRequest,
                         subtitle: 'Post urgent request',
                         color: const Color(0xFFE8F5E9),
                         iconColor: Colors.green,
@@ -353,15 +360,16 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
               ),
             ),
 
-            // ── Responses Title ──────────────────────────────────────
+            // â”€â”€ Responses Title â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Responses',
-                        style: TextStyle(
+                    // âœ… TRANSLATED
+                    Text(l10n.donorsResponded,
+                        style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1A1A1A))),
@@ -372,8 +380,9 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                           builder: (_) => const AllResponsesScreen(),
                         ),
                       ),
-                      child: const Text('See All',
-                          style: TextStyle(
+                      // âœ… TRANSLATED
+                      child: Text(l10n.seeAll,
+                          style: const TextStyle(
                               color: Color(0xFFB71C1C),
                               fontWeight: FontWeight.w600,
                               fontSize: 14)),
@@ -383,7 +392,7 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
               ),
             ),
 
-            // ── Response Cards ───────────────────────────────────────
+            // â”€â”€ Response Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (!_responsesLoaded)
               const SliverToBoxAdapter(
                 child: Center(
@@ -402,16 +411,17 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
                     decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14)),
-                    child: const Column(children: [
-                      Icon(Icons.hourglass_top_outlined,
+                    child: Column(children: [
+                      const Icon(Icons.hourglass_top_outlined,
                           size: 40, color: Color(0xFFB71C1C)),
-                      SizedBox(height: 8),
-                      Text('Waiting for donors...',
-                          style: TextStyle(
+                      const SizedBox(height: 8),
+                      // âœ… TRANSLATED
+                      Text(l10n.waitingForDonors,
+                          style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF1A1A1A))),
-                      SizedBox(height: 4),
-                      Text('Post a request and donors will respond',
+                      const SizedBox(height: 4),
+                      const Text('Post a request and donors will respond',
                           style: TextStyle(
                               fontSize: 12, color: Color(0xFF9E9E9E))),
                     ]),
@@ -453,7 +463,7 @@ class _RecipientHomeTabState extends State<RecipientHomeTab> {
   }
 }
 
-// ── Small Response Card ────────────────────────────────────────────────────────
+// â”€â”€ Small Response Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _SmallResponseCard extends StatelessWidget {
   final _ResponseData response;
@@ -461,6 +471,8 @@ class _SmallResponseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // âœ… NEW
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -509,7 +521,9 @@ class _SmallResponseCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Color(0xFF1A1A1A))),
-                Text('Blood ${response.donorBlood} • ${response.donorPhone}',
+                // âœ… TRANSLATED
+                Text(
+                    '${l10n.bloodType} ${response.donorBlood} â€¢ ${response.donorPhone}',
                     style: const TextStyle(
                         fontSize: 12, color: Color(0xFF9E9E9E))),
               ],
@@ -555,7 +569,7 @@ class _SmallResponseCard extends StatelessWidget {
   }
 }
 
-// ── Action Card ────────────────────────────────────────────────────────────────
+// â”€â”€ Action Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ActionCard extends StatelessWidget {
   final IconData icon;
@@ -603,7 +617,7 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-// ── Data Model ─────────────────────────────────────────────────────────────────
+// â”€â”€ Data Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ResponseData {
   final String donorId;
@@ -623,7 +637,7 @@ class _ResponseData {
   });
 }
 
-// ── Hex Painter ────────────────────────────────────────────────────────────────
+// â”€â”€ Hex Painter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _HexPainter extends CustomPainter {
   @override

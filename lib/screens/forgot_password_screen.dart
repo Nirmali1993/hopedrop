@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hopedrop/l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -22,15 +23,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _resetPassword() async {
+    final l10n = AppLocalizations.of(context)!;
     final phone = _phoneController.text.trim();
 
     if (phone.isEmpty) {
-      _showError('Please enter your phone number');
+      _showError(l10n.pleaseEnterPhone);
       return;
     }
-
     if (phone.length < 9) {
-      _showError('Please enter a valid phone number');
+      _showError(l10n.pleaseEnterPhone);
       return;
     }
 
@@ -38,7 +39,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final email = await AuthService.resetPassword(phone);
-
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -98,8 +98,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 }
 
-// ── Form View ──────────────────────────────────────────────────────────────────
-
 class _FormView extends StatelessWidget {
   final TextEditingController phoneController;
   final bool isLoading;
@@ -113,12 +111,12 @@ class _FormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ NEW
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 20),
-
-        // Icon
         Container(
           width: 72,
           height: 72,
@@ -126,49 +124,36 @@ class _FormView extends StatelessWidget {
             color: const Color(0xFFFFEBEE),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Icon(
-            Icons.lock_reset_outlined,
-            color: Color(0xFFB71C1C),
-            size: 36,
-          ),
+          child: const Icon(Icons.lock_reset_outlined,
+              color: Color(0xFFB71C1C), size: 36),
         ),
         const SizedBox(height: 24),
 
-        // Title
-        const Text(
-          'Forgot Password?',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
+        // ✅ TRANSLATED
+        Text(l10n.forgotPassword,
+            style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A))),
         const SizedBox(height: 8),
-        const Text(
-          'Enter your registered phone number and we\'ll send you a password reset link.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF9E9E9E),
-            height: 1.5,
-          ),
-        ),
+        Text(l10n.enterPhoneToReset,
+            style: const TextStyle(
+                fontSize: 14, color: Color(0xFF9E9E9E), height: 1.5)),
         const SizedBox(height: 32),
 
-        // Phone field
-        const Text(
-          'Phone Number',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
+        // ✅ TRANSLATED
+        Text(l10n.phoneNumber,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A))),
         const SizedBox(height: 8),
         TextField(
           controller: phoneController,
           keyboardType: TextInputType.phone,
           decoration: InputDecoration(
-            hintText: 'Enter your phone number',
+            // ✅ TRANSLATED
+            hintText: l10n.enterPhoneNumber,
             hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
             filled: true,
             fillColor: const Color(0xFFF5F5F5),
@@ -190,7 +175,6 @@ class _FormView extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
-        // Reset button
         SizedBox(
           width: double.infinity,
           height: 54,
@@ -209,37 +193,30 @@ class _FormView extends StatelessWidget {
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : const Text(
-                    'Send Reset Link',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                        color: Colors.white, strokeWidth: 2.5))
+                // ✅ TRANSLATED
+                : Text(l10n.sendResetLink,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
           ),
         ),
         const SizedBox(height: 20),
 
-        // Back to login
         Center(
           child: GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Text.rich(
+            child: Text.rich(
               TextSpan(
                 text: 'Remember your password? ',
-                style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
+                style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
                 children: [
                   TextSpan(
-                    text: 'Login',
-                    style: TextStyle(
-                      color: Color(0xFFB71C1C),
-                      fontWeight: FontWeight.bold,
-                    ),
+                    // ✅ TRANSLATED
+                    text: l10n.login,
+                    style: const TextStyle(
+                        color: Color(0xFFB71C1C), fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -251,8 +228,6 @@ class _FormView extends StatelessWidget {
   }
 }
 
-// ── Success View ───────────────────────────────────────────────────────────────
-
 class _SuccessView extends StatelessWidget {
   final String email;
   final VoidCallback onBack;
@@ -261,12 +236,12 @@ class _SuccessView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ NEW
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 40),
-
-        // Success icon
         Container(
           width: 100,
           height: 100,
@@ -274,22 +249,17 @@ class _SuccessView extends StatelessWidget {
             color: const Color(0xFFE8F5E9),
             borderRadius: BorderRadius.circular(50),
           ),
-          child: const Icon(
-            Icons.check_circle_outline_rounded,
-            color: Colors.green,
-            size: 56,
-          ),
+          child: const Icon(Icons.check_circle_outline_rounded,
+              color: Colors.green, size: 56),
         ),
         const SizedBox(height: 28),
 
-        const Text(
-          'Reset Link Sent!',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
+        // ✅ TRANSLATED
+        Text(l10n.resetSent,
+            style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A))),
         const SizedBox(height: 12),
 
         Text(
@@ -305,14 +275,11 @@ class _SuccessView extends StatelessWidget {
             color: const Color(0xFFFFEBEE),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Text(
-            '📧 $email',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFB71C1C),
-            ),
-          ),
+          child: Text('📧 $email',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFB71C1C))),
         ),
         const SizedBox(height: 20),
 
@@ -338,7 +305,6 @@ class _SuccessView extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
-        // Back to login button
         SizedBox(
           width: double.infinity,
           height: 54,
@@ -350,14 +316,12 @@ class _SuccessView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14)),
               elevation: 0,
             ),
-            child: const Text(
-              'Back to Login',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            // ✅ TRANSLATED
+            child: Text(l10n.login,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
           ),
         ),
       ],

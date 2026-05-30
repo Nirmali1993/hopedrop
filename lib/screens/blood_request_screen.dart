@@ -80,13 +80,13 @@ class _PostRequestTabState extends State<_PostRequestTab> {
 
   final List<String> _bloodTypes = [
     'A+',
-    'A−',
+    'A-',
     'B+',
-    'B−',
+    'B-',
     'AB+',
-    'AB−',
+    'AB-',
     'O+',
-    'O−'
+    'O-'
   ];
   final List<String> _urgencyLevels = ['Urgent', 'High', 'Normal'];
 

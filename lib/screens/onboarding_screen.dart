@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:hopedrop/l10n/app_localizations.dart';
+import '../services/language_service.dart';
 import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,31 +15,111 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _currentPage = 0;
 
-  final List<_OnboardData> _pages = [
-    const _OnboardData(
-      imagePath: 'assets/images/img_woman_donate_bl.png',
-      fallbackIcon: Icons.local_hospital_outlined,
-      title: 'Secure blood for\nSurgeries & Emergencies',
-      subtitle: 'Book Blood from trusted banks to avoid\nlast-minute stress',
-    ),
-    const _OnboardData(
-      imagePath: 'assets/images/needblood2.jpg',
-      fallbackIcon: Icons.water_drop_outlined,
-      title: 'Need Blood?\nJust a Tap away!',
-      subtitle: 'Find donors or blood bank instantly\nwith just a few taps',
-    ),
-    const _OnboardData(
-      imagePath: 'assets/images/findblood3.jpg',
-      fallbackIcon: Icons.favorite_outline,
-      title: 'Find Blood,\nSave Life',
-      subtitle:
-          'Join the fastest way to request, Book\nand donate blood anytime, anywhere',
-    ),
-  ];
-
   void _goToLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  void _showLanguagePicker() {
+    final langService = Provider.of<LanguageService>(context, listen: false);
+
+    final languages = [
+      {'code': 'en', 'name': 'English', 'native': 'English', 'flag': '🇬🇧'},
+      {'code': 'si', 'name': 'Sinhala', 'native': 'සිංහල', 'flag': '🇱🇰'},
+      {'code': 'ta', 'name': 'Tamil', 'native': 'தமிழ்', 'flag': '🇱🇰'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        final l10n = AppLocalizations.of(context)!;
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Text('🌐', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  // ✅ TRANSLATED
+                  Text(l10n.selectLanguageTitle,
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A))),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...languages.map((lang) {
+                final isSelected =
+                    langService.currentLocale.languageCode == lang['code'];
+                return GestureDetector(
+                  onTap: () async {
+                    await langService.changeLanguage(lang['code']!);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFFFEBEE)
+                          : const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFB71C1C)
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(lang['flag']!,
+                            style: const TextStyle(fontSize: 28)),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(lang['native']!,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1A1A1A))),
+                              Text(lang['name']!,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Color(0xFF9E9E9E))),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFFB71C1C), size: 24),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -48,36 +131,98 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ NEW
+    final langService = Provider.of<LanguageService>(context);
+    final currentLang =
+        langService.getLanguageName(langService.currentLocale.languageCode);
+    final currentFlag =
+        langService.getFlagEmoji(langService.currentLocale.languageCode);
+
+    // ✅ TRANSLATED pages — built dynamically from l10n
+    final pages = [
+      _OnboardData(
+        imagePath: 'assets/images/img_woman_donate_bl.png',
+        fallbackIcon: Icons.local_hospital_outlined,
+        title: l10n.onboard1Title,
+        subtitle: l10n.onboard1Subtitle,
+      ),
+      _OnboardData(
+        imagePath: 'assets/images/needblood2.jpg',
+        fallbackIcon: Icons.water_drop_outlined,
+        title: l10n.onboard2Title,
+        subtitle: l10n.onboard2Subtitle,
+      ),
+      _OnboardData(
+        imagePath: 'assets/images/findblood3.jpg',
+        fallbackIcon: Icons.favorite_outline,
+        title: l10n.onboard3Title,
+        subtitle: l10n.onboard3Subtitle,
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
+            // Top bar — Language + Skip
             Padding(
-              padding: const EdgeInsets.only(top: 8, right: 16),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: _goToLogin,
-                  child: const Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: Color(0xFF9E9E9E),
-                      fontSize: 14,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Language selector button
+                  GestureDetector(
+                    onTap: _showLanguagePicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(currentFlag,
+                              style: const TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(currentLang,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF1A1A1A))),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.keyboard_arrow_down,
+                              size: 18, color: Color(0xFF9E9E9E)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+
+                  // ✅ TRANSLATED Skip button
+                  TextButton(
+                    onPressed: _goToLogin,
+                    child: Text(
+                      l10n.skip,
+                      style: const TextStyle(
+                        color: Color(0xFF9E9E9E),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Pages
+            // Pages — ✅ now uses translated data
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _currentPage = i),
-                itemBuilder: (_, i) => _OnboardPage(data: _pages[i]),
+                itemBuilder: (_, i) => _OnboardPage(data: pages[i]),
               ),
             ),
 
@@ -86,11 +231,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
               child: Column(
                 children: [
-                  // Dot indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
-                      _pages.length,
+                      pages.length,
                       (i) => AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -106,13 +250,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
-
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (_currentPage < _pages.length - 1) {
+                        if (_currentPage < pages.length - 1) {
                           _controller.nextPage(
                             duration: const Duration(milliseconds: 400),
                             curve: Curves.easeInOut,
@@ -129,10 +272,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         elevation: 0,
                       ),
+                      // ✅ TRANSLATED Next/Get Started
                       child: Text(
-                        _currentPage == _pages.length - 1
-                            ? 'Get Started'
-                            : 'Next',
+                        _currentPage == pages.length - 1
+                            ? l10n.getStarted
+                            : l10n.next,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -161,7 +305,6 @@ class _OnboardPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Illustration box
           Container(
             height: 260,
             width: double.infinity,
@@ -185,7 +328,7 @@ class _OnboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 40),
-
+          // ✅ Now shows translated title
           Text(
             data.title,
             textAlign: TextAlign.center,
@@ -197,7 +340,7 @@ class _OnboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-
+          // ✅ Now shows translated subtitle
           Text(
             data.subtitle,
             textAlign: TextAlign.center,
@@ -219,6 +362,7 @@ class _OnboardData {
   final String title;
   final String subtitle;
 
+  // ✅ No longer const — titles come from l10n
   const _OnboardData({
     required this.imagePath,
     required this.fallbackIcon,

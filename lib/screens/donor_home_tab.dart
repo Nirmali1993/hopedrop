@@ -1,8 +1,9 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import 'all_requests_screen.dart';
@@ -17,18 +18,12 @@ class DonorHomeTab extends StatefulWidget {
 
 class _DonorHomeTabState extends State<DonorHomeTab> {
   Map<String, int> _stats = {'donors': 0, 'donations': 0};
-
-  // Profile cache — no blinking
   String? _cachedPhotoBase64;
   String? _cachedName;
   String? _cachedBloodType;
   bool _cachedIsAvailable = true;
   bool _profileLoaded = false;
-
-  // Requests cache — no blinking
   List<QueryDocumentSnapshot> _cachedRequests = [];
-
-  // Banner
   final PageController _bannerController = PageController();
   int _currentBanner = 0;
   Timer? _bannerTimer;
@@ -91,6 +86,8 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final name = _cachedName ?? widget.userData?['name'] ?? 'Hero';
     final firstName = name.split(' ')[0];
     final bloodType = _cachedBloodType ?? widget.userData?['bloodType'] ?? '';
@@ -108,7 +105,7 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
         color: const Color(0xFFB71C1C),
         child: CustomScrollView(
           slivers: [
-            // ── Header ──────────────────────────────────────────────
+            // ── Header ────────────────────────────────────────
             SliverToBoxAdapter(
               child: Stack(
                 children: [
@@ -132,44 +129,57 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(20),
+                            // ✅ BUG 2 FIX — Wrapped in Expanded
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.volunteer_activism,
+                                            color: Colors.white, size: 14),
+                                        const SizedBox(width: 4),
+                                        // ✅ TRANSLATED
+                                        Flexible(
+                                          child: Text(
+                                            l10n.iAmDonor,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(Icons.volunteer_activism,
-                                          color: Colors.white, size: 14),
-                                      SizedBox(width: 4),
-                                      Text("I'm a Donor 🩸",
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text('Ready to save a life?',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold)),
-                                Text('Hello, $firstName!',
-                                    style: TextStyle(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.85),
-                                        fontSize: 13)),
-                              ],
+                                  const SizedBox(height: 8),
+                                  // ✅ TRANSLATED
+                                  Text(l10n.readyToSaveLife,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
+                                  // ✅ TRANSLATED
+                                  Text('${l10n.hello}, $firstName!',
+                                      style: TextStyle(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.85),
+                                          fontSize: 13)),
+                                ],
+                              ),
                             ),
-
-                            // Profile photo
+                            // ✅ Profile photo (outside Expanded)
+                            const SizedBox(width: 12),
                             Column(
                               children: [
                                 Stack(
@@ -236,12 +246,12 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                           children: [
                             _StatBox(
                                 value: _stats['donors'].toString(),
-                                label: 'Donors',
+                                label: l10n.donors,
                                 icon: Icons.people_outline),
                             const SizedBox(width: 12),
                             _StatBox(
                                 value: _stats['donations'].toString(),
-                                label: 'Donations',
+                                label: l10n.totalDonations,
                                 icon: Icons.water_drop_outlined),
                           ],
                         ),
@@ -265,15 +275,15 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.orange),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.timer_outlined,
+                        const Icon(Icons.timer_outlined,
                             color: Colors.orange, size: 18),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'You are not eligible to donate yet. Help button is hidden until you are eligible.',
-                            style: TextStyle(
+                            l10n.notEligibleMsg,
+                            style: const TextStyle(
                                 color: Colors.orange,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500),
@@ -285,7 +295,7 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                 ),
               ),
 
-            // ── Banner Slider ────────────────────────────────────────
+            // ── Banner Slider ──────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               sliver: SliverToBoxAdapter(
@@ -344,15 +354,15 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
               ),
             ),
 
-            // ── Urgent Requests ──────────────────────────────────────
+            // ── Urgent Requests ────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Urgent Requests',
-                        style: TextStyle(
+                    Text(l10n.urgentRequests,
+                        style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1A1A1A))),
@@ -362,8 +372,8 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                           MaterialPageRoute(
                               builder: (_) => AllRequestsScreen(
                                   isDonorEligible: isAvailable))),
-                      child: const Text('See All',
-                          style: TextStyle(
+                      child: Text(l10n.seeAll,
+                          style: const TextStyle(
                               color: Color(0xFFB71C1C),
                               fontWeight: FontWeight.w600,
                               fontSize: 14)),
@@ -400,12 +410,13 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                         decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14)),
-                        child: const Column(children: [
-                          Icon(Icons.favorite_outline,
+                        child: Column(children: [
+                          const Icon(Icons.favorite_outline,
                               size: 40, color: Color(0xFFB71C1C)),
-                          SizedBox(height: 8),
-                          Text('No urgent requests right now',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 8),
+                          Text(l10n.noRequestsYet,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
                         ]),
                       ),
                     ),
@@ -424,7 +435,6 @@ class _DonorHomeTabState extends State<DonorHomeTab> {
                           child: _RequestCard(
                             requestId: _cachedRequests[i].id,
                             data: data,
-                            // Pass eligibility to each card
                             isDonorEligible: isAvailable,
                           ),
                         );
@@ -471,6 +481,8 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final bloodType = data['bloodType'] ?? '?';
     final hospital = data['hospital'] ?? '';
     final location = data['location'] ?? '';
@@ -524,11 +536,13 @@ class _RequestCard extends StatelessWidget {
                   Row(children: [
                     const Icon(Icons.location_on_outlined,
                         size: 11, color: Color(0xFF9E9E9E)),
-                    Text(location,
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9E9E9E))),
+                    Flexible(
+                      child: Text(location,
+                          style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF9E9E9E))),
+                    ),
                   ]),
-                Text('$units Unit Needed',
+                Text('$units ${l10n.unitNeeded}',
                     style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFFB71C1C),
@@ -544,24 +558,28 @@ class _RequestCard extends StatelessWidget {
                   color: urgencyColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(urgency,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: urgencyColor,
-                        fontWeight: FontWeight.w600)),
+                child: Text(
+                  urgency == 'Urgent'
+                      ? l10n.urgent
+                      : urgency == 'High'
+                          ? l10n.high
+                          : l10n.normal,
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: urgencyColor,
+                      fontWeight: FontWeight.w600),
+                ),
               ),
               const SizedBox(height: 6),
-
-              // ── Show Help only if eligible ──
               if (isDonorEligible)
                 ElevatedButton(
                   onPressed: () async {
                     await DatabaseService.respondToRequest(requestId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Response sent!'),
-                          backgroundColor: Color(0xFFB71C1C),
+                        SnackBar(
+                          content: Text('✅ ${l10n.responded}!'),
+                          backgroundColor: const Color(0xFFB71C1C),
                         ),
                       );
                     }
@@ -575,10 +593,9 @@ class _RequestCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
-                  child: const Text('Help'),
+                  child: Text(l10n.respond),
                 )
               else
-                // Not eligible — show timer
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -619,19 +636,23 @@ class _StatBox extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 18),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
-                Text(label,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11)),
-              ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
+                  Text(label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 10)),
+                ],
+              ),
             ),
           ],
         ),
